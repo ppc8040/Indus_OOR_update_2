@@ -1,8 +1,8 @@
+import os
 import requests
 import pandas as pd
 import logging
 import time
-import os
 import xml.etree.ElementTree as ET
 from openpyxl.utils import get_column_letter as get_excel_column_letter
 from datetime import datetime
@@ -12,18 +12,19 @@ import msal
 
 
 class AuthConfig:
-    CLIENT_ID = 'a2239be7-12cd-442d-983f-ea7e316ef767'
-    CLIENT_SECRET = 'sho8Q~sanlYEX3SKXjYJb0NSXL.gPRpdi63-tcmp'
-
-authority = 'https://login.microsoftonline.com/ed97e9bb-e119-4bd4-ab00-307d64bdf908'
+    CLIENT_ID = os.environ.get('AZURE_CLIENT_ID', '')
+    CLIENT_SECRET = os.environ.get('AZURE_CLIENT_SECRET', '')
+    authority = os.environ.get('AZURE_AUTHORITY', '')
 
 def get_access_token():
     auth_config = AuthConfig()
     app = msal.ConfidentialClientApplication(
-        auth_config.CLIENT_ID, authority=authority, client_credential=auth_config.CLIENT_SECRET
+        auth_config.CLIENT_ID, 
+        authority=auth_config.authority, 
+        client_credential=auth_config.CLIENT_SECRET
     )
-    result = app.acquire_token_silent(scopes=['https://graph.microsoft.com/.default'], account=None)
     
+    result = app.acquire_token_silent(scopes=['https://graph.microsoft.com/.default'], account=None)
     if not result:
         result = app.acquire_token_for_client(scopes=['https://graph.microsoft.com/.default'])
     
@@ -279,13 +280,18 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# CONFIGURATION
+# SAP Configuration from environment variables
 SAP_CONFIG = {
-    "username": "INDUS_OPEN_ORDER",
-    "password": "w6fo3zfq/bDYr}8>BU@{i3oFd[dq#Zv\/eL&}SKF",
-    "sales_order_api_url": "https://my409486-api.s4hana.cloud.sap/sap/opu/odata/sap/YY1_INDUSOPENORDERAPI_CDS/YY1_IndusOpenOrderAPI",
-    "stock_api_url": "https://my409486-api.s4hana.cloud.sap/sap/opu/odata/sap/API_MATERIAL_STOCK_SRV/A_MatlStkInAcctMod",
+    "username": os.environ.get('SAP_USERNAME', ''),
+    "password": os.environ.get('SAP_PASSWORD', ''),
+    "sales_order_api_url": os.environ.get('SAP_SALES_ORDER_API_URL', ''),
+    "stock_api_url": os.environ.get('SAP_STOCK_API_URL', ''),
     "fixed_excel_file": "Open_Order_Report_MASTER.xlsx"
+}
+SHAREPOINT_CONFIG = {
+    "site_id": os.environ.get('SHAREPOINT_SITE_ID', ''),
+    "file_path": os.environ.get('SHAREPOINT_FILE_PATH', ''),
+    "worksheet_name": "Open Order Report"
 }
 INVENTORY_OUTPUT = [
     {"label": "Stock in 3001", "plant": "3000", "storloc": "3001"},
@@ -714,4 +720,5 @@ def main():
 
 
 if __name__ == "__main__":
+
     main()
