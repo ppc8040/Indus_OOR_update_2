@@ -1,0 +1,62 @@
+name: SAP S/4HANA Data Sync to SharePoint
+
+# Schedule: Run every 3 hours
+on:
+  schedule:
+    - cron: '0 */3 * * *'  # Every 3 hours at minute 0
+  workflow_dispatch:  # Allow manual triggering
+  push:  # Run on push for testing (remove in production)
+    branches: [ main ]
+
+jobs:
+  sync-data:
+    runs-on: ubuntu-latest
+    
+    # Set environment variables directly in workflow
+    env:
+      # Azure/Microsoft Graph Configuration
+      AZURE_CLIENT_ID: 'a2239be7-12cd-442d-983f-ea7e316ef767'
+      AZURE_CLIENT_SECRET: 'sho8Q~sanlYEX3SKXjYJb0NSXL.gPRpdi63-tcmp'
+      AZURE_AUTHORITY: 'https://login.microsoftonline.com/ed97e9bb-e119-4bd4-ab00-307d64bdf908'
+      
+      # SAP S/4HANA Configuration
+      SAP_USERNAME: 'INDUS_OPEN_ORDER'
+      SAP_PASSWORD: 'w6fo3zfq/bDYr}8>BU@{i3oFd[dq#Zv\/eL&}SKF'
+      SAP_SALES_ORDER_API_URL: 'https://my409486-api.s4hana.cloud.sap/sap/opu/odata/sap/YY1_INDUSOPENORDERAPI_CDS/YY1_IndusOpenOrderAPI'
+      SAP_STOCK_API_URL: 'https://my409486-api.s4hana.cloud.sap/sap/opu/odata/sap/API_MATERIAL_STOCK_SRV/A_MatlStkInAcctMod'
+      
+      # SharePoint Configuration
+      SHAREPOINT_SITE_ID: '201c767f-23cc-4eff-b76c-47a275706531,094b21f9-6ed4-47c3-a751-3b217a18b98e'
+      SHAREPOINT_FILE_PATH: 'Indus Open Order Report for trial.xlsx'
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Run SAP data sync
+      run: |
+        python Indus-Open-Order-Report.py
+      env:
+        # Additional runtime environment variables if needed
+        PYTHONUNBUFFERED: 1
+    
+    - name: Upload logs (if any errors occur)
+      uses: actions/upload-artifact@v4
+      if: failure()
+      with:
+        name: error-logs
+        path: |
+          *.log
+          error_*.txt
+        retention-days: 7
