@@ -294,16 +294,16 @@ SHAREPOINT_CONFIG = {
     "worksheet_name": "Open Order Report"
 }
 INVENTORY_OUTPUT = [
-    {"label": "Stock in 3001", "plant": "3000", "storloc": "3001"},
-    {"label": "Stock in 3003", "plant": "3000", "storloc": "3003"},
-    {"label": "Stock in 1000", "plant": "1000", "storloc": None},
-    {"label": "Stock in 2000", "plant": "2000", "storloc": None},
+    {"label": "3001", "plant": "3000", "storloc": "3001"},
+    {"label": "3003", "plant": "3000", "storloc": "3003"},
+    {"label": "1000", "plant": "1000", "storloc": None},
+    {"label": "2000", "plant": "2000", "storloc": None},
 ]
 OUTPUT_COLUMNS = [
     "Customer Code", "Customer PO#", "Date of receiving PO#", "Customer Required Delivery Date",
     "Sales Document", "Sales Document Item", "Customer Material", "Indus Product",
     "Ordered Quantity", "Delivered Quantity", "Open Quantity",
-    "Stock in 3001", "Stock in 3003", "Stock in 1000", "Stock in 2000",
+    "3001", "3003", "1000", "2000",
     "To be Manufactured", "Indus Ship Date"
 ]
 FIELD_XML_MAPPING = {
@@ -484,7 +484,7 @@ def format_output_df(sales_df, stock_df):
         if col not in merged_df.columns:
             # Use empty string for text and 0 for numeric columns known in advance
             if col in ["To be Manufactured", "Ordered Quantity", "Delivered Quantity", "Open Quantity",
-                    "Stock in 3001", "Stock in 3003", "Stock in 1000", "Stock in 2000"]:
+                    "3001", "3003", "1000", "2000"]:
                 merged_df[col] = 0
             else:
                 merged_df[col] = ""
@@ -566,7 +566,7 @@ def fifo_allocate_stock_to_orders(report, stock_df):
         s2000 = stock_other_grouped.get((m, "2000"), 0.0)
         mat_loc_stock[m] = [s3001, s3003, s1000, s2000]
 
-    st_cols = ["Stock in 3001", "Stock in 3003", "Stock in 1000", "Stock in 2000"]
+    st_cols = ["3001", "3003", "1000", "2000"]
     oq_col = "Open Quantity"
     indus_col = "Indus Product"
     updated_cols = {col: [] for col in st_cols}
@@ -722,3 +722,4 @@ def main():
 if __name__ == "__main__":
 
     main()
+
