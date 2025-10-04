@@ -3,7 +3,7 @@ name: SAP S/4HANA Data Sync to SharePoint
 # Schedule: Run every 3 hours
 on:
   schedule:
-    - cron: '0 */3 * * *'  # Every 3 hours at minute 0
+    - cron: '*/5 * * * *'  # Every 3 hours at minute 0
   workflow_dispatch:  # Allow manual triggering
   push:  # Run on push for testing (remove in production)
     branches: [ main ]
