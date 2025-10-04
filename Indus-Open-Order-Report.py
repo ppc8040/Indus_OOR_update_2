@@ -304,7 +304,7 @@ OUTPUT_COLUMNS = [
     "Sales Document", "Sales Document Item", "Customer Material", "Indus Product",
     "Ordered Quantity", "Delivered Quantity", "Open Quantity",
     "3001", "3003", "1000", "2000",
-    "To be Manufactured", "Indus Ship Date"
+    "To be Manufactured", "Indus Ship Date", "Actual Customer"
 ]
 FIELD_XML_MAPPING = {
     "Customer Code": "SearchTerm1",
@@ -320,6 +320,35 @@ FIELD_XML_MAPPING = {
     "Open Quantity": "OpenConfdDelivQtyInOrdQtyUnit",
     "Indus Ship Date": "YY1_IndusShipDate_SDI"
 }
+
+def compute_actual_customer(df):
+    """
+    Compute Actual Customer column:
+    - Use Customer Code if it's not "PLS"
+    - If Customer Code is "PLS", find another Customer Code for the same Indus Product that is not "PLS"
+    """
+    # Create a mapping of Indus Product to non-PLS Customer Codes
+    non_pls_mapping = {}
+    
+    # Get all rows where Customer Code is not PLS
+    non_pls_rows = df[df['Customer Code'] != 'PLS']
+    if not non_pls_rows.empty:
+        # Create mapping: Indus Product -> first non-PLS Customer Code found
+        non_pls_mapping = non_pls_rows.groupby('Indus Product')['Customer Code'].first().to_dict()
+    
+    def get_actual_customer(row):
+        customer_code = row['Customer Code']
+        indus_product = row['Indus Product']
+        
+        # If Customer Code is not PLS, use it as is
+        if customer_code != 'PLS':
+            return customer_code
+        
+        # If Customer Code is PLS, try to find alternative for same Indus Product
+        return non_pls_mapping.get(indus_product, 'PLS')  # Fallback to PLS if no alternative found
+    
+    df['Actual Customer'] = df.apply(get_actual_customer, axis=1)
+    return df
 
 def retry_api_call(func, max_retries=3, delay=2, *args, **kwargs):
     for attempt in range(max_retries):
@@ -484,11 +513,16 @@ def format_output_df(sales_df, stock_df):
         if col not in merged_df.columns:
             # Use empty string for text and 0 for numeric columns known in advance
             if col in ["To be Manufactured", "Ordered Quantity", "Delivered Quantity", "Open Quantity",
-                    "3001", "3003", "1000", "2000"]:
+                    "Stock in 3001", "Stock in 3003", "Stock in 1000", "Stock in 2000"]:
                 merged_df[col] = 0
             else:
                 merged_df[col] = ""
+    
+    # Compute Actual Customer column before final reordering
+    merged_df = compute_actual_customer(merged_df)
+    
     merged_df = merged_df[OUTPUT_COLUMNS]
+
 
         # Filter out rows without customer code/search term
     before_customer_filter = merged_df.shape[0]
@@ -722,5 +756,6 @@ def main():
 if __name__ == "__main__":
 
     main()
+
 
 
