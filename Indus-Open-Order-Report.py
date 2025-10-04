@@ -326,27 +326,43 @@ def compute_actual_customer(df):
     Compute Actual Customer column:
     - Use Customer Code if it's not "PLS"
     - If Customer Code is "PLS", find another Customer Code for the same Indus Product that is not "PLS"
+    - If even that fails, use static mapping provided
     """
-    # Create a mapping of Indus Product to non-PLS Customer Codes
-    non_pls_mapping = {}
-    
-    # Get all rows where Customer Code is not PLS
+
+    # STATIC mapping from your supplied list (override/fallback)
+    static_mapping = {
+        "CHW0272": "RDT", "CEW0413": "RDT", "CHW0240": "RDT", "CCN0672": "RDT", "CEW2082": "BAC", "CEN1343": "BAC", "CCN1265": "BAC",
+        "CES1788": "BAC", "CCG1689": "BAC", "CCN1272": "BAC", "CES1319": "BAC", "CES1318": "BAC", "CES1723": "BAC", "CEU1733": "BAC",
+        "CES2755": "BAC", "CEV0415": "BAC", "CEV0417": "BAC", "CEN1600": "BAC", "CCJ1264": "BAC", "CES1721": "BAC", "CEW1599": "BAC",
+        "CCN1266": "BAC", "CES1787": "BAC", "CEV0424": "BAC", "CES1789": "BAC", "CES1383": "BAC", "CEU2827": "BAC", "CES1320": "BAC",
+        "CCR1684": "BAC", "CHX0277": "RDT", "CJX0350": "RDT", "CEX0426": "RDT", "CCW0768": "RDT", "CEW0635": "RDT", "CJX0163": "RDT",
+        "CCR0860": "RDT", "AJW0427": "WFI", "AEW1813": "WFI", "AEW1814": "WFI", "AJW0428": "WFI", "AJW0429": "WFI", "AJW0430": "WFI",
+        "AEW1858": "WFI", "AEW1857": "WFI", "AEW1582": "WFI", "CHX0605": "RDE", "CCR1749": "SCT", "CCQ1748": "SCT", "CCQ2053": "SCT",
+        "CCR1997": "ICE", "CCR1998": "ICE", "CCR1999": "ICE", "CCR2000": "ICE", "ACN1334": "ICE", "CEU2552": "BAC", "AJX0462": "ENR"
+    }
+
+    # First, build mapping from the real data as before
     non_pls_rows = df[df['Customer Code'] != 'PLS']
     if not non_pls_rows.empty:
-        # Create mapping: Indus Product -> first non-PLS Customer Code found
         non_pls_mapping = non_pls_rows.groupby('Indus Product')['Customer Code'].first().to_dict()
-    
+    else:
+        non_pls_mapping = {}
+
     def get_actual_customer(row):
         customer_code = row['Customer Code']
         indus_product = row['Indus Product']
-        
-        # If Customer Code is not PLS, use it as is
+        # Priority 1: If not PLS, use directly
         if customer_code != 'PLS':
             return customer_code
-        
-        # If Customer Code is PLS, try to find alternative for same Indus Product
-        return non_pls_mapping.get(indus_product, 'PLS')  # Fallback to PLS if no alternative found
-    
+        # Priority 2: If PLS and another Customer Code exists for this product, use it
+        if indus_product in non_pls_mapping:
+            return non_pls_mapping[indus_product]
+        # Priority 3: Use static mapping if available
+        if indus_product in static_mapping:
+            return static_mapping[indus_product]
+        # Final fallback—still say 'PLS'
+        return 'PLS'
+
     df['Actual Customer'] = df.apply(get_actual_customer, axis=1)
     return df
 
@@ -756,6 +772,7 @@ def main():
 if __name__ == "__main__":
 
     main()
+
 
 
 
