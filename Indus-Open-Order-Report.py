@@ -159,7 +159,7 @@ def update_excel_data_via_graph_api(
 
             
             # Assume headers in first row and columns from A to last_col
-            header_range = f"A1:R1"
+            header_range = f"A1:S1"
 
             # PATCH fill color
             header_fill_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drive/root:/{file_server_relative_url}:/workbook/worksheets('{worksheet_name}')/range(address='{header_range}')/format/fill"
@@ -223,21 +223,21 @@ def set_excel_update_timestamp(site_id, file_server_relative_url, worksheet_name
         "Content-Type": "application/json",
         "workbook-session-id": session_id
     }
-    # R1 = 18th column, 1st row (Excel columns are 1-indexed, but API expects A1 notation)
+    # S1 = 18th column, 1st row (Excel columns are 1-indexed, but API expects A1 notation)
     update_datetime = datetime.now().strftime('Generated On: %d-%m-%Y %H:%M:%S')
     payload = {
         "values": [[update_datetime]]
     }
     update_url = (
         f"https://graph.microsoft.com/v1.0/sites/{site_id}/drive/root:/{file_server_relative_url}:/"
-        f"workbook/worksheets('{worksheet_name}')/range(address='R1')"
+        f"workbook/worksheets('{worksheet_name}')/range(address='S1')"
     )
     r = session.patch(update_url, headers=api_headers, json=payload)
     if r.status_code in [200, 201]:
-        logger.info("Timestamp for last update written to cell R1")
+        logger.info("Timestamp for last update written to cell S1")
         return True
     else:
-        logger.error(f"Failed to update timestamp in cell R1: {r.status_code} {r.text}")
+        logger.error(f"Failed to update timestamp in cell S1: {r.status_code} {r.text}")
         return False
 
 
@@ -616,7 +616,7 @@ def fifo_allocate_stock_to_orders(report, stock_df):
 
 #     # === Main report sheet ===
 #     ws = wb.create_sheet("Open Order Report", 0)
-#     ws["R1"] = f"Generated On: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+#     ws["S1"] = f"Generated On: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
 #     # Write data cell by cell so no row is skipped
 #     for row_idx, row in enumerate(dataframe_to_rows(df, index=False, header=True), 1):  # Start from Excel row 1
 #         for col_idx, value in enumerate(row, 1):  # Start from Excel col 1
@@ -722,4 +722,5 @@ def main():
 if __name__ == "__main__":
 
     main()
+
 
