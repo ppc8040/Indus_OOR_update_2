@@ -224,7 +224,11 @@ def set_excel_update_timestamp(site_id, file_server_relative_url, worksheet_name
         "workbook-session-id": session_id
     }
     # S1 = 18th column, 1st row (Excel columns are 1-indexed, but API expects A1 notation)
-    update_datetime = datetime.now().strftime('Generated On: %d-%m-%Y %H:%M:%S')
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    update_datetime = datetime.now(ZoneInfo("Asia/Dubai")).strftime('Generated On: %d-%m-%Y %H:%M:%S')
+
     payload = {
         "values": [[update_datetime]]
     }
@@ -772,6 +776,7 @@ def main():
 if __name__ == "__main__":
 
     main()
+
 
 
 
