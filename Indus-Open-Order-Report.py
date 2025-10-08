@@ -110,6 +110,13 @@ def update_excel_data_via_graph_api(
         # Calculate range for the data
         num_rows = len(data_rows)
         num_cols = len(headers)
+
+        session.patch(
+            f"https://graph.microsoft.com/v1.0/sites/{site_id}/drive/root:/{file_server_relative_url}:/workbook/worksheets('{worksheet_name}')/range(address='G2:G{num_rows}')/format",
+            headers=api_headers,
+            json={"numberFormat": [["@"]]}
+        )
+        
         range_address = f"A1:{get_excel_column_letter(num_cols)}{num_rows}"
         
         # Update the range with new data
@@ -776,6 +783,7 @@ def main():
 if __name__ == "__main__":
 
     main()
+
 
 
 
