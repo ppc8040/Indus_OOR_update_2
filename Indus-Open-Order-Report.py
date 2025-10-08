@@ -186,14 +186,34 @@ def update_excel_data_via_graph_api(
             else:
                 logger.warning(f"Header font update failed: {font_response.status_code}, {font_response.text}")
 
-            
-            # Apply auto-fit columns
-            autofit_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drive/root:/{file_server_relative_url}:/workbook/worksheets('{worksheet_name}')/range(address='{range_address}')/format/autofitColumns"
-            autofit_resp = session.post(autofit_url, headers=api_headers)
-            if autofit_resp.status_code in [200, 201, 204]:
-                logger.info("Auto-fit columns applied successfully")
+            # Set center alignment for header row
+            header_align_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drive/root:/{file_server_relative_url}:/workbook/worksheets('{worksheet_name}')/range(address='{header_range}')/format"
+            header_align_payload = {"horizontalAlignment": "Center"}
+            align_resp = session.patch(header_align_url, headers=api_headers, json=header_align_payload)
+            if align_resp.status_code in [200, 201]:
+                logger.info("Header center alignment applied.")
             else:
-                logger.warning(f"Auto-fit columns failed: {autofit_resp.status_code}, {autofit_resp.text}")
+                logger.warning(f"Header alignment failed: {align_resp.status_code}, {align_resp.text}")
+
+            
+            # Set fixed column widths and enable text wrapping
+            column_widths = {
+                'A': 70, 'B': 100, 'C': 90, 'D': 120, 'E': 90, 'F': 80, 'G': 130, 'H': 90,
+                'I': 50, 'J': 50, 'K': 50, 'L': 40, 'M': 40, 'N': 40, 'O': 40, 'P': 80, 'Q': 90, 'R': 80
+            }
+
+            for col_letter, width in column_widths.items():
+                col_range = f"{col_letter}:{col_letter}"
+                col_format_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drive/root:/{file_server_relative_url}:/workbook/worksheets('{worksheet_name}')/range(address='{col_range}')/format"
+                col_format_payload = {
+                    "columnWidth": width,
+                    "wrapText": True
+                }
+                col_resp = session.patch(col_format_url, headers=api_headers, json=col_format_payload)
+                if col_resp.status_code in [200, 201]:
+                    logger.info(f"Column {col_letter} width set to {width} with text wrapping")
+                else:
+                    logger.warning(f"Column {col_letter} formatting failed: {col_resp.status_code}")
             
             # Set auto-filter
             autofilter_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drive/root:/{file_server_relative_url}:/workbook/worksheets('{worksheet_name}')/autoFilter/apply"
@@ -783,6 +803,7 @@ def main():
 if __name__ == "__main__":
 
     main()
+
 
 
 
