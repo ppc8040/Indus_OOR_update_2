@@ -675,7 +675,10 @@ def fifo_allocate_stock_to_orders(report, stock_df):
         mat_loc_stock[norm_mat] = stock_remaining
         for c, v in zip(st_cols, allocated):
             updated_cols[c].append(v)
-        tbm_vals.append(required if required > 0 else 0)
+        
+        # Direct “To be Manufactured” = OpenQ – stock3001 – stock3003 – stock1000
+        to_be_mfg = openq - allocated[0] - allocated[1] - allocated[2]
+        tbm_vals.append(to_be_mfg if to_be_mfg > 0 else 0)
 
     for c in st_cols:
         report[c] = updated_cols[c]
@@ -803,6 +806,7 @@ def main():
 if __name__ == "__main__":
 
     main()
+
 
 
 
