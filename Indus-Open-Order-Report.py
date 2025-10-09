@@ -560,7 +560,7 @@ def format_output_df(sales_df, stock_df):
         if col not in merged_df.columns:
             # Use empty string for text and 0 for numeric columns known in advance
             if col in ["To be Manufactured", "Ordered Quantity", "Delivered Quantity", "Open Quantity",
-                    "Stock in 3001", "Stock in 3003", "Stock in 1000", "Stock in 2000"]:
+                    "3001", "3003", "1000", "2000"]:
                 merged_df[col] = 0
             else:
                 merged_df[col] = ""
@@ -803,6 +803,7 @@ def main():
 if __name__ == "__main__":
 
     main()
+
 
 
 
