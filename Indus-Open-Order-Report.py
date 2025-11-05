@@ -1,8 +1,8 @@
-import os
 import requests
 import pandas as pd
 import logging
 import time
+import os
 import xml.etree.ElementTree as ET
 from openpyxl.utils import get_column_letter as get_excel_column_letter
 from datetime import datetime
@@ -12,19 +12,18 @@ import msal
 
 
 class AuthConfig:
-    CLIENT_ID = os.environ.get('AZURE_CLIENT_ID', '')
-    CLIENT_SECRET = os.environ.get('AZURE_CLIENT_SECRET', '')
-    authority = os.environ.get('AZURE_AUTHORITY', '')
+    CLIENT_ID = 'a2239be7-12cd-442d-983f-ea7e316ef767'
+    CLIENT_SECRET = 'sho8Q~sanlYEX3SKXjYJb0NSXL.gPRpdi63-tcmp'
+
+authority = 'https://login.microsoftonline.com/ed97e9bb-e119-4bd4-ab00-307d64bdf908'
 
 def get_access_token():
     auth_config = AuthConfig()
     app = msal.ConfidentialClientApplication(
-        auth_config.CLIENT_ID, 
-        authority=auth_config.authority, 
-        client_credential=auth_config.CLIENT_SECRET
+        auth_config.CLIENT_ID, authority=authority, client_credential=auth_config.CLIENT_SECRET
     )
-    
     result = app.acquire_token_silent(scopes=['https://graph.microsoft.com/.default'], account=None)
+    
     if not result:
         result = app.acquire_token_for_client(scopes=['https://graph.microsoft.com/.default'])
     
@@ -116,7 +115,7 @@ def update_excel_data_via_graph_api(
             headers=api_headers,
             json={"numberFormat": [["@"]]}
         )
-        
+
         range_address = f"A1:{get_excel_column_letter(num_cols)}{num_rows}"
         
         # Update the range with new data
@@ -185,7 +184,7 @@ def update_excel_data_via_graph_api(
                 logger.info("Header font color/bold applied.")
             else:
                 logger.warning(f"Header font update failed: {font_response.status_code}, {font_response.text}")
-
+            
             # Set center alignment for header row
             header_align_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drive/root:/{file_server_relative_url}:/workbook/worksheets('{worksheet_name}')/range(address='{header_range}')/format"
             header_align_payload = {"horizontalAlignment": "Center"}
@@ -214,6 +213,7 @@ def update_excel_data_via_graph_api(
                     logger.info(f"Column {col_letter} width set to {width} with text wrapping")
                 else:
                     logger.warning(f"Column {col_letter} formatting failed: {col_resp.status_code}")
+
             
             # Set auto-filter
             autofilter_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drive/root:/{file_server_relative_url}:/workbook/worksheets('{worksheet_name}')/autoFilter/apply"
@@ -250,12 +250,8 @@ def set_excel_update_timestamp(site_id, file_server_relative_url, worksheet_name
         "Content-Type": "application/json",
         "workbook-session-id": session_id
     }
-    # S1 = 18th column, 1st row (Excel columns are 1-indexed, but API expects A1 notation)
-    from datetime import datetime
-    from zoneinfo import ZoneInfo
-
-    update_datetime = datetime.now(ZoneInfo("Asia/Dubai")).strftime('Generated On: %d-%m-%Y %H:%M:%S')
-
+    # S1 = 19th column, 1st row (Excel columns are 1-indexed, but API expects A1 notation)
+    update_datetime = datetime.now().strftime('Generated On: %d-%m-%Y %H:%M:%S')
     payload = {
         "values": [[update_datetime]]
     }
@@ -311,18 +307,13 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# SAP Configuration from environment variables
+# CONFIGURATION
 SAP_CONFIG = {
-    "username": os.environ.get('SAP_USERNAME', ''),
-    "password": os.environ.get('SAP_PASSWORD', ''),
-    "sales_order_api_url": os.environ.get('SAP_SALES_ORDER_API_URL', ''),
-    "stock_api_url": os.environ.get('SAP_STOCK_API_URL', ''),
+    "username": "INDUS_OPEN_ORDER",
+    "password": "w6fo3zfq/bDYr}8>BU@{i3oFd[dq#Zv\/eL&}SKF",
+    "sales_order_api_url": "https://my409486-api.s4hana.cloud.sap/sap/opu/odata/sap/YY1_INDUSOPENORDERAPI_CDS/YY1_IndusOpenOrderAPI",
+    "stock_api_url": "https://my409486-api.s4hana.cloud.sap/sap/opu/odata/sap/API_MATERIAL_STOCK_SRV/A_MatlStkInAcctMod",
     "fixed_excel_file": "Open_Order_Report_MASTER.xlsx"
-}
-SHAREPOINT_CONFIG = {
-    "site_id": os.environ.get('SHAREPOINT_SITE_ID', ''),
-    "file_path": os.environ.get('SHAREPOINT_FILE_PATH', ''),
-    "worksheet_name": "Open Order Report"
 }
 INVENTORY_OUTPUT = [
     {"label": "3001", "plant": "3000", "storloc": "3001"},
@@ -341,7 +332,7 @@ FIELD_XML_MAPPING = {
     "Customer Code": "SearchTerm1",
     "Customer PO#": "PurchaseOrderByCustomer",
     "Date of receiving PO#": "CustomerPurchaseOrderDate",
-    "Customer Required Delivery Date": "RequestedDeliveryDate",
+    "Customer Required Delivery Date": "YY1_CUSTOMERITEMDATE_SDI",
     "Sales Document": "SalesOrder",
     "Sales Document Item": "SalesOrderItem",
     "Customer Material": "MaterialByCustomer",
@@ -564,12 +555,11 @@ def format_output_df(sales_df, stock_df):
                 merged_df[col] = 0
             else:
                 merged_df[col] = ""
-    
+
     # Compute Actual Customer column before final reordering
     merged_df = compute_actual_customer(merged_df)
-    
-    merged_df = merged_df[OUTPUT_COLUMNS]
 
+    merged_df = merged_df[OUTPUT_COLUMNS]
 
         # Filter out rows without customer code/search term
     before_customer_filter = merged_df.shape[0]
@@ -804,16 +794,4 @@ def main():
 
 
 if __name__ == "__main__":
-
     main()
-
-
-
-
-
-
-
-
-
-
-
