@@ -198,7 +198,7 @@ def update_excel_data_via_graph_api(
             # Set fixed column widths and enable text wrapping
             column_widths = {
                 'A': 70, 'B': 100, 'C': 90, 'D': 120, 'E': 90, 'F': 80, 'G': 130, 'H': 90,
-                'I': 50, 'J': 50, 'K': 50, 'L': 40, 'M': 40, 'N': 40, 'O': 40, 'P': 80, 'Q': 90, 'R': 80
+                'I': 50, 'J': 50, 'K': 50, 'L': 40, 'M': 40, 'N': 40, 'O': 40, 'P': 80, 'Q': 90, 'R': 80, 'S': 150
             }
 
             for col_letter, width in column_widths.items():
