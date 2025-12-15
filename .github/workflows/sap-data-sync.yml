@@ -46,7 +46,7 @@ jobs:
     
     - name: Run SAP data sync
       run: |
-        python Indus-Open-Order-Report.py
+        python Indus-Open-Order-Report-EXW.py
       env:
         # Additional runtime environment variables if needed
         PYTHONUNBUFFERED: 1
