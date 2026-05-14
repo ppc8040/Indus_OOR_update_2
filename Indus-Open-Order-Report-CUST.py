@@ -198,7 +198,7 @@ def update_excel_data_via_graph_api(
             # Set fixed column widths and enable text wrapping
             column_widths = {
                 'A': 70, 'B': 100, 'C': 90, 'D': 120, 'E': 90, 'F': 80, 'G': 130, 'H': 90,
-                'I': 50, 'J': 50, 'K': 50, 'L': 60, 'M': 60, 'N': 60, 'O': 70, 'P': 80, 'Q': 90, 'R': 80, 'S': 150
+                'I': 50, 'J': 50, 'K': 50, 'L': 40, 'M': 40, 'N': 40, 'O': 40, 'P': 80, 'Q': 90, 'R': 80, 'S': 150
             }
 
             for col_letter, width in column_widths.items():
@@ -915,14 +915,6 @@ def main():
 
         # FIFO allocation with Incoterms logic
         final_report_df_fifo = fifo_allocate_stock_to_orders(final_report_df, stock_df)
-
-        # Rename column headers for final Excel output
-        final_report_df_fifo = final_report_df_fifo.rename(columns={
-            "3001": "US Warehouse",
-            "3003": "In Transit",
-            "1000": "Indus Warehouse",
-            "2000": "Manufacturing WIP"
-        })
 
         # Verify FIFO processing
         if "Incoterms" in final_report_df_fifo.columns:
