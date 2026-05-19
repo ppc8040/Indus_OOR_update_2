@@ -714,7 +714,7 @@ def fifo_allocate_stock_to_orders(report, stock_df):
         "HVA", "HYD", "ICE", "ILA", "ISR", "ITW", "IWA", "JMF", "KYN", "LNW",
         "NRC", "NYL", "SPX", "PER", "RAC", "RDT", "RPC", "RSG", "SCT", "STG",
         "STR", "SVA", "TAI", "TFS", "TMC", "WFI", "ETE", "WBT", "RDE", "LER",
-        "ACE", "SPS", "MLT", "OHO", "SPX"
+        "ACE", "SPS", "MLT", "OHO", "SPX", "BON", "AML", "NYL", "PLK"
     }
 
     def norm_key(val):
