@@ -696,10 +696,13 @@ def format_output_df(sales_df, stock_df):
 
     logger.info(f"Final output lines for Excel: {len(merged_df)}")
     # Remove every line item where Indus Product starts with "6"
-    before_rows = merged_df.shape[0]
-    merged_df = merged_df[~merged_df["Indus Product"].astype(str).str.startswith("6")]
-    after_rows = merged_df.shape[0]
-    logger.info(f"Filtered Indus Product starting with '6': {before_rows - after_rows} rows removed, {after_rows} rows remaining.")
+    beforerows = merged_df.shape[0]
+    merged_df = merged_df[
+        ~merged_df["Indus Product"].astype(str).str.startswith("6") &
+        (merged_df["Indus Product"].astype(str).str.strip() != "CEJ2363")
+    ]
+    afterrows = merged_df.shape[0]
+    logger.info(f'Filtered Indus Product starting with 6 and excluded CEJ2363: {beforerows - afterrows} rows removed, {afterrows} rows remaining.')
     # Ensure date columns are datetime
     merged_df['Date of receiving PO#'] = pd.to_datetime(merged_df['Date of receiving PO#'], errors='coerce')
     merged_df['Customer Required Delivery Date'] = pd.to_datetime(merged_df['Customer Required Delivery Date'], errors='coerce')
