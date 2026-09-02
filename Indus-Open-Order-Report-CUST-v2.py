@@ -750,7 +750,7 @@ def fifo_allocate_stock_to_orders(report, stock_df):
         "STR", "SVA", "TAI", "TFS", "TMC", "WFI", "ETE", "WBT", "RDE", "LER",
         "ACE", "SPS", "MLT", "OHO", "SPX", "BON", "AML", "NYL", "PLK", "FHP",
         "LER", "ITT", "MTX", "MTA", "NVL", "CMT", "RDE", "AUE", "FBD", "FLC",
-        "HBD", "NYL", "SPM", "SIG"
+        "HBD", "NYL", "SPM", "SIG", "JOL", "NBG", "BDT", "ETP"
     }
 
     def norm_key(val):
