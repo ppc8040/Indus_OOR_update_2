@@ -260,21 +260,24 @@ def set_excel_update_timestamp(site_id, file_server_relative_url, worksheet_name
         "Content-Type": "application/json",
         "workbook-session-id": session_id
     }
-    # T1 = 20th column, 1st row (timestamp shifted right after inserting new column S)
+    # Timestamp always sits one column to the RIGHT of the last data column.
+    # Derived from OUTPUT_COLUMNS rather than hardcoded, so adding further
+    # columns later moves it automatically instead of overwriting data.
+    timestamp_cell = f"{get_excel_column_letter(len(OUTPUT_COLUMNS) + 1)}1"
     update_datetime = datetime.now().strftime('Generated On: %d-%m-%Y %H:%M:%S')
     payload = {
         "values": [[update_datetime]]
     }
     update_url = (
         f"https://graph.microsoft.com/v1.0/sites/{site_id}/drive/root:/{file_server_relative_url}:/"
-        f"workbook/worksheets('{worksheet_name}')/range(address='T1')"
+        f"workbook/worksheets('{worksheet_name}')/range(address='{timestamp_cell}')"
     )
     r = session.patch(update_url, headers=api_headers, json=payload)
     if r.status_code in [200, 201]:
-        logger.info("Timestamp for last update written to cell T1")
+        logger.info(f"Timestamp for last update written to cell {timestamp_cell}")
         return True
     else:
-        logger.error(f"Failed to update timestamp in cell T1: {r.status_code} {r.text}")
+        logger.error(f"Failed to update timestamp in cell {timestamp_cell}: {r.status_code} {r.text}")
         return False
 
 
@@ -338,6 +341,10 @@ SAP_CONFIG = {
     "password": "w6fo3zfq/bDYr}8>BU@{i3oFd[dq#Zv\/eL&}SKF",
     "sales_order_api_url": "https://my409486-api.s4hana.cloud.sap/sap/opu/odata/sap/YY1_INDUSOPENORDERAPI_CDS/YY1_IndusOpenOrderAPI",
     "stock_api_url": "https://my409486-api.s4hana.cloud.sap/sap/opu/odata/sap/API_MATERIAL_STOCK_SRV/A_MatlStkInAcctMod",
+    # Standard sales order header API - supplies CreationDate / CreatedByUser,
+    # i.e. when the order was actually keyed into SAP. The custom CDS view
+    # YY1_IndusOpenOrderAPI does not expose these fields.
+    "sales_order_header_api_url": "https://my409486-api.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_ORDER_SRV/A_SalesOrder",
     "fixed_excel_file": "Open_Order_Report_MASTER.xlsx"
 }
 INVENTORY_OUTPUT = [
@@ -351,7 +358,10 @@ OUTPUT_COLUMNS = [
     "Sales Document", "Sales Document Item", "Customer Material", "Indus Product",
     "Ordered Quantity", "Delivered Quantity", "Open Quantity",
     "3001", "3003", "1000", "2000",
-    "To be Manufactured", "Indus Ship Date", "Actual Customer", "Indus Ship Date (Production)"
+    "To be Manufactured", "Indus Ship Date", "Actual Customer", "Indus Ship Date (Production)",
+    # NEW COLUMNS - appended at the end so existing column positions are unchanged.
+    # Anything downstream that reads columns A-S keeps working untouched.
+    "SAP Entry Date", "Entered By"
 ]
 FIELD_XML_MAPPING = {
     "Customer Code": "SearchTerm1",
@@ -523,6 +533,88 @@ def get_sales_order_data():
         df[col] = ""
 
     return df
+
+
+def get_order_creation_info(sales_orders, chunk_size=40):
+    """
+    Return {SalesOrder: (CreationDate, CreatedByUser)} from API_SALES_ORDER_SRV.
+
+    The custom CDS view used for the main report carries no creation timestamp,
+    so this is a second call against the standard sales order header API.
+
+    Notes:
+      * CreationDate is HEADER level - every item of an order shares one value.
+      * There is no CreationTime on A_SalesOrder in this tenant; only the date
+        is available. Time of day would need the CDS view extended in SAP.
+      * CreatedByUser may be a batch/interface user for EDI-created orders
+        rather than a person.
+      * Failure here is non-fatal: the columns come back blank and the rest of
+        the report is unaffected.
+    """
+    info = {}
+    orders = sorted({str(o).strip() for o in sales_orders if str(o).strip()})
+    if not orders:
+        return info
+
+    session_so = requests.Session()
+    session_so.auth = (SAP_CONFIG['username'], SAP_CONFIG['password'])
+    session_so.headers.update({'Accept': 'application/json'})
+
+    total_chunks = (len(orders) + chunk_size - 1) // chunk_size
+    for idx in range(total_chunks):
+        chunk = orders[idx * chunk_size:(idx + 1) * chunk_size]
+        filter_str = " or ".join([f"SalesOrder eq '{o}'" for o in chunk])
+        params = {
+            "$filter": filter_str,
+            "$select": "SalesOrder,CreationDate,CreatedByUser",
+            "$format": "json",
+        }
+
+        def api_call():
+            response = session_so.get(
+                SAP_CONFIG['sales_order_header_api_url'],
+                params=params,
+                timeout=90,
+            )
+            response.raise_for_status()
+            return response.json()
+
+        try:
+            payload = retry_api_call(api_call)
+            results = payload.get("d", {}).get("results", [])
+            for row in results:
+                so = str(row.get("SalesOrder", "")).strip()
+                if so:
+                    info[so] = (row.get("CreationDate"), row.get("CreatedByUser"))
+        except Exception as exc:
+            logger.warning(
+                "Creation-info fetch failed for chunk %d/%d: %s",
+                idx + 1, total_chunks, exc
+            )
+
+    logger.info(f"Fetched SAP creation info for {len(info)} of {len(orders)} sales orders.")
+    return info
+
+
+def parse_sap_odata_date(value):
+    """
+    SAP OData v2 returns dates as /Date(1699920000000)/ (epoch ms).
+    Returns a pandas Timestamp, or NaT when absent or unparseable.
+    """
+    if value is None or value == "":
+        return pd.NaT
+    try:
+        text = str(value)
+        if "/Date(" in text:
+            digits = text.split("(")[1].split(")")[0]
+            for sep in ("+", "-"):
+                if sep in digits[1:]:
+                    digits = digits[0] + digits[1:].split(sep)[0]
+                    break
+            return pd.to_datetime(int(digits), unit="ms", errors="coerce")
+        return pd.to_datetime(text, errors="coerce")
+    except Exception:
+        return pd.NaT
 
 
 def parse_stock_xml_entries(xml_text, location_label):
@@ -951,6 +1043,32 @@ def main():
 
         # FIFO allocation with Incoterms logic
         final_report_df_fifo = fifo_allocate_stock_to_orders(final_report_df, stock_df)
+
+        # ---- SAP entry date / entered-by -------------------------------
+        # Appended as the last two columns; existing columns are untouched.
+        try:
+            creation_info = get_order_creation_info(
+                final_report_df_fifo["Sales Document"].tolist()
+            )
+            final_report_df_fifo["SAP Entry Date"] = (
+                final_report_df_fifo["Sales Document"]
+                .astype(str).str.strip()
+                .map(lambda so: parse_sap_odata_date(creation_info.get(so, (None, None))[0]))
+            )
+            final_report_df_fifo["Entered By"] = (
+                final_report_df_fifo["Sales Document"]
+                .astype(str).str.strip()
+                .map(lambda so: creation_info.get(so, (None, None))[1] or "")
+            )
+            filled = final_report_df_fifo["SAP Entry Date"].notna().sum()
+            logger.info(
+                f"SAP Entry Date populated for {filled} of "
+                f"{len(final_report_df_fifo)} rows."
+            )
+        except Exception as exc:
+            logger.warning("Could not populate SAP entry columns: %s", exc)
+            final_report_df_fifo["SAP Entry Date"] = pd.NaT
+            final_report_df_fifo["Entered By"] = ""
 
         # Verify FIFO processing
         if "Incoterms" in final_report_df_fifo.columns:
