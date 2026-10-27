@@ -12,8 +12,12 @@ import msal
 
 
 class AuthConfig:
-    CLIENT_ID = 'a2239be7-12cd-442d-983f-ea7e316ef767'
-    CLIENT_SECRET = 'sho8Q~sanlYEX3SKXjYJb0NSXL.gPRpdi63-tcmp'
+    CLIENT_ID = os.environ.get("AZURE_CLIENT_ID")
+    CLIENT_SECRET = os.environ.get("AZURE_CLIENT_SECRET")
+    if not CLIENT_ID or not CLIENT_SECRET:
+        raise RuntimeError(
+            "AZURE_CLIENT_ID / AZURE_CLIENT_SECRET not set - add them as GitHub repository secrets"
+        )
 
 authority = 'https://login.microsoftonline.com/ed97e9bb-e119-4bd4-ab00-307d64bdf908'
 
@@ -338,7 +342,7 @@ logger = logging.getLogger(__name__)
 # CONFIGURATION
 SAP_CONFIG = {
     "username": "INDUS_OPEN_ORDER",
-    "password": "w6fo3zfq/bDYr}8>BU@{i3oFd[dq#Zv\/eL&}SKF",
+    "password": os.environ.get("SAP_PASSWORD"),
     "sales_order_api_url": "https://my409486-api.s4hana.cloud.sap/sap/opu/odata/sap/YY1_INDUSOPENORDERAPI_CDS/YY1_IndusOpenOrderAPI",
     "stock_api_url": "https://my409486-api.s4hana.cloud.sap/sap/opu/odata/sap/API_MATERIAL_STOCK_SRV/A_MatlStkInAcctMod",
     # Standard sales order header API - supplies CreationDate / CreatedByUser,
@@ -347,6 +351,9 @@ SAP_CONFIG = {
     "sales_order_header_api_url": "https://my409486-api.s4hana.cloud.sap/sap/opu/odata/sap/API_SALES_ORDER_SRV/A_SalesOrder",
     "fixed_excel_file": "Open_Order_Report_MASTER.xlsx"
 }
+
+if not SAP_CONFIG["password"]:
+    raise RuntimeError("SAP_PASSWORD not set - add it as a GitHub repository secret")
 INVENTORY_OUTPUT = [
     {"label": "3001", "plant": "3000", "storloc": "3001"},
     {"label": "3003", "plant": "3000", "storloc": "3003"},
