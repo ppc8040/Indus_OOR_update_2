@@ -11,13 +11,6 @@ jobs:
     runs-on: ubuntu-latest
     
     # Set environment variables directly in workflow
-    class AuthConfig:
-        CLIENT_ID = os.environ.get("AZURE_CLIENT_ID")
-        CLIENT_SECRET = os.environ.get("AZURE_CLIENT_SECRET")
-        if not CLIENT_ID or not CLIENT_SECRET:
-            raise RuntimeError(
-                "AZURE_CLIENT_ID / AZURE_CLIENT_SECRET not set - add them as GitHub repository secrets"
-            )
     env:
       # Azure/Microsoft Graph Configuration
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
@@ -26,7 +19,7 @@ jobs:
       
       # SAP S/4HANA Configuration
       SAP_USERNAME: 'INDUS_OPEN_ORDER'
-      SAP_PASSWORD: 'w6fo3zfq/bDYr}8>BU@{i3oFd[dq#Zv\/eL&}SKF'
+      SAP_PASSWORD: ${{ secrets.SAP_PASSWORD }}
       SAP_SALES_ORDER_API_URL: 'https://my409486-api.s4hana.cloud.sap/sap/opu/odata/sap/YY1_INDUSOPENORDERAPI_CDS/YY1_IndusOpenOrderAPI'
       SAP_STOCK_API_URL: 'https://my409486-api.s4hana.cloud.sap/sap/opu/odata/sap/API_MATERIAL_STOCK_SRV/A_MatlStkInAcctMod'
       
