@@ -11,6 +11,13 @@ jobs:
     runs-on: ubuntu-latest
     
     # Set environment variables directly in workflow
+    class AuthConfig:
+        CLIENT_ID = os.environ.get("AZURE_CLIENT_ID")
+        CLIENT_SECRET = os.environ.get("AZURE_CLIENT_SECRET")
+        if not CLIENT_ID or not CLIENT_SECRET:
+            raise RuntimeError(
+                "AZURE_CLIENT_ID / AZURE_CLIENT_SECRET not set - add them as GitHub repository secrets"
+            )
     env:
       # Azure/Microsoft Graph Configuration
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
